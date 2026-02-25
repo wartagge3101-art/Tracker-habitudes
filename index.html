@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tracker d'Habitudes — Martin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1c25;
+    --card-border: #2a2d3a;
+    --text: #e8e9ed;
+    --text-muted: #8b8fa3;
+    --accent-blue: #4f8cff;
+    --accent-purple: #a855f7;
+    --accent-green: #34d399;
+    --accent-orange: #fb923c;
+    --accent-pink: #f472b6;
+    --accent-cyan: #22d3ee;
+    --accent-yellow: #facc15;
+    --accent-red: #f87171;
+    --accent-lime: #a3e635;
+    --accent-indigo: #818cf8;
+    --check-bg: #252836;
+    --check-active: #4f8cff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  /* ---- DONUT CHART ---- */
+  .donut-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .donut-container {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 0 auto;
+  }
+
+  .donut-container canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  .donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .donut-center .pct {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--accent-blue);
+  }
+
+  .donut-center .label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ---- RIGHT PANEL ---- */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ---- BAR CHART ---- */
+  .bar-chart-wrapper {
+    padding-bottom: 12px;
+  }
+
+  .bar-chart-wrapper h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+  }
+
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 180px;
+    padding-bottom: 32px;
+    position: relative;
+  }
+
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    position: relative;
+  }
+
+  .bar {
+    width: 36px;
+    border-radius: 6px 6px 2px 2px;
+    position: relative;
+    transition: height 0.6s cubic-bezier(.4,0,.2,1);
+    cursor: pointer;
+  }
+
+  .bar:hover {
+    filter: brightness(1.2);
+    transform: scaleX(1.08);
+  }
+
+  .bar-value {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .bar-label {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ---- TRACKER GRID ---- */
+  .tracker-section h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+  }
+
+  .tracker-grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .tracker-grid th {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 6px 4px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    background: var(--card);
+  }
+
+  .tracker-grid th:first-child {
+    text-align: left;
+    min-width: 160px;
+  }
+
+  .tracker-grid td {
+    padding: 5px 4px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .tracker-grid td:first-child {
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    padding-right: 12px;
+    white-space: nowrap;
+  }
+
+  .habit-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .habit-icon {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .tracker-grid tr:hover td:first-child {
+    color: var(--accent-blue);
+  }
+
+  /* Checkbox styling */
+  .check-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .check-cell input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 26px;
+    height: 26px;
+    background: var(--check-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .check-cell input[type="checkbox"]:checked {
+    background: var(--check-active);
+    border-color: var(--check-active);
+  }
+
+  .check-cell input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .check-cell input[type="checkbox"]:hover {
+    border-color: var(--accent-blue);
+    transform: scale(1.08);
+  }
+
+  /* ---- SCORE ROW ---- */
+  .score-row td {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    padding-top: 10px !important;
+    border-top: 1px solid var(--card-border);
+  }
+
+  /* ---- Month nav ---- */
+  .month-nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+
+  .month-nav button {
+    background: var(--check-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .month-nav button:hover {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+  }
+
+  .month-nav .month-label {
+    font-size: 15px;
+    font-weight: 600;
+    min-width: 160px;
+    text-align: center;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 900px) {
+    .dashboard {
+      grid-template-columns: 1fr;
+    }
+    .donut-section {
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+
+  .tracker-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+</style>
+</head>
+<body>
+
+<h1>📊 <span>Tracker d'Habitudes</span></h1>
+
+<div class="dashboard">
+  <!-- LEFT: Donut -->
+  <div class="card donut-section">
+    <div class="donut-container">
+      <canvas id="donutChart" width="220" height="220"></canvas>
+      <div class="donut-center">
+        <div class="pct" id="avgPct">0%</div>
+        <div class="label">Moyenne</div>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel">
+    <!-- Bar chart -->
+    <div class="card bar-chart-wrapper">
+      <h2>Taux de complétion par habitude</h2>
+      <div class="bar-chart" id="barChart"></div>
+    </div>
+
+    <!-- Tracker Grid -->
+    <div class="card tracker-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <h2 style="margin:0;">Habitudes quotidiennes</h2>
+        <div class="month-nav">
+          <button id="prevMonth">◀</button>
+          <div class="month-label" id="monthLabel"></div>
+          <button id="nextMonth">▶</button>
+        </div>
+      </div>
+      <div class="tracker-scroll">
+        <table class="tracker-grid" id="trackerTable">
+          <thead id="trackerHead"></thead>
+          <tbody id="trackerBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- CONFIG ----
+const HABITS = [
+  { name: "Réveil à 7h", icon: "⏰", color: "#4f8cff" },
+  { name: "Méditation", icon: "🧘", color: "#a855f7" },
+  { name: "Étirements", icon: "🤸", color: "#34d399" },
+  { name: "Douche froide", icon: "🚿", color: "#22d3ee" },
+  { name: "Deep work", icon: "🧠", color: "#fb923c" },
+  { name: "Déjeuner healthy", icon: "🥗", color: "#facc15" },
+  { name: "Séance de sport", icon: "💪", color: "#f472b6" },
+  { name: "Dîner healthy", icon: "🍽️", color: "#a3e635" },
+  { name: "30min de lecture", icon: "📖", color: "#818cf8" },
+  { name: "Couché avant 00h", icon: "🌙", color: "#f87171" }
+];
+
+// State
+let currentYear = 2026;
+let currentMonth = 1; // 0-indexed, 1 = February
+const storageKey = () => `habits_${currentYear}_${currentMonth}`;
+
+function getDaysInMonth(y, m) {
+  return new Date(y, m + 1, 0).getDate();
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(storageKey());
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+function saveData(data) {
+  localStorage.setItem(storageKey(), JSON.stringify(data));
+}
+
+function initData() {
+  let data = loadData();
+  if (!data) {
+    const days = getDaysInMonth(currentYear, currentMonth);
+    data = {};
+    HABITS.forEach((h, hi) => {
+      data[hi] = {};
+      for (let d = 1; d <= days; d++) {
+        data[hi][d] = false;
+      }
+    });
+    // Pre-fill sample data for Feb 2026 days 1-7
+    if (currentYear === 2026 && currentMonth === 1) {
+      for (let hi = 0; hi < HABITS.length; hi++) {
+        for (let d = 1; d <= 7; d++) {
+          data[hi][d] = true;
+        }
+      }
+      // Add some unchecked to match image pattern
+      data[2][7] = false; // Étirements day 7
+      data[3][7] = false; // Douche froide day 7
+    }
+    saveData(data);
+  }
+  return data;
+}
+
+// ---- RENDER ----
+function render() {
+  const data = initData();
+  const days = getDaysInMonth(currentYear, currentMonth);
+  const monthNames = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+  // Month label
+  document.getElementById('monthLabel').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+  // --- Tracker table ---
+  const thead = document.getElementById('trackerHead');
+  const tbody = document.getElementById('trackerBody');
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+
+  // Header row
+  let headRow = '<tr><th>Habitudes</th>';
+  for (let d = 1; d <= days; d++) {
+    headRow += `<th>${d}</th>`;
+  }
+  headRow += '</tr>';
+  thead.innerHTML = headRow;
+
+  // Habit rows
+  HABITS.forEach((h, hi) => {
+    let row = `<tr><td><div class="habit-name"><span class="habit-icon" style="background:${h.color}"></span>${h.icon} ${h.name}</div></td>`;
+    for (let d = 1; d <= days; d++) {
+      const checked = data[hi]?.[d] ? 'checked' : '';
+      row += `<td><div class="check-cell"><input type="checkbox" ${checked} data-h="${hi}" data-d="${d}"></div></td>`;
+    }
+    row += '</tr>';
+    tbody.innerHTML += row;
+  });
+
+  // Score row
+  let scoreRow = '<tr class="score-row"><td style="font-size:13px;color:#8b8fa3;">Score / jour</td>';
+  for (let d = 1; d <= days; d++) {
+    let count = 0;
+    HABITS.forEach((_, hi) => { if (data[hi]?.[d]) count++; });
+    const pct = Math.round((count / HABITS.length) * 100);
+    scoreRow += `<td>${pct}%</td>`;
+  }
+  scoreRow += '</tr>';
+  tbody.innerHTML += scoreRow;
+
+  // Add event listeners
+  tbody.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const hi = this.dataset.h;
+      const d = this.dataset.d;
+      data[hi][d] = this.checked;
+      saveData(data);
+      render();
+    });
+  });
+
+  // --- Compute stats ---
+  const habitPcts = HABITS.map((_, hi) => {
+    let checked = 0;
+    let total = 0;
+    for (let d = 1; d <= days; d++) {
+      total++;
+      if (data[hi]?.[d]) checked++;
+    }
+    return Math.round((checked / total) * 100);
+  });
+
+  const avg = Math.round(habitPcts.reduce((a, b) => a + b, 0) / habitPcts.length);
+  document.getElementById('avgPct').textContent = avg + '%';
+
+  // --- Donut chart ---
+  drawDonut(habitPcts);
+
+  // --- Bar chart ---
+  drawBars(habitPcts);
+
+  // --- Legend ---
+  const legendEl = document.getElementById('legend');
+  legendEl.innerHTML = '';
+  HABITS.forEach((h, i) => {
+    legendEl.innerHTML += `<div class="legend-item"><span class="legend-dot" style="background:${h.color}"></span>${h.name}</div>`;
+  });
+}
+
+function drawDonut(pcts) {
+  const canvas = document.getElementById('donutChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = 220 * dpr;
+  canvas.height = 220 * dpr;
+  ctx.scale(dpr, dpr);
+  canvas.style.width = '220px';
+  canvas.style.height = '220px';
+
+  const cx = 110, cy = 110, r = 85, lineWidth = 22;
+  const total = pcts.reduce((a, b) => a + b, 0);
+
+  ctx.clearRect(0, 0, 220, 220);
+
+  // Background ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = '#252836';
+  ctx.lineWidth = lineWidth;
+  ctx.stroke();
+
+  // Segments
+  let startAngle = -Math.PI / 2;
+  pcts.forEach((pct, i) => {
+    const sliceAngle = (pct / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+    ctx.strokeStyle = HABITS[i].color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'butt';
+    ctx.stroke();
+    startAngle += sliceAngle;
+  });
+}
+
+function drawBars(pcts) {
+  const container = document.getElementById('barChart');
+  container.innerHTML = '';
+
+  const maxPct = Math.max(...pcts, 1);
+
+  pcts.forEach((pct, i) => {
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.background = HABITS[i].color;
+    bar.style.height = `${(pct / 100) * 140}px`;
+
+    const val = document.createElement('div');
+    val.className = 'bar-value';
+    val.textContent = pct + '%';
+
+    const label = document.createElement('div');
+    label.className = 'bar-label';
+    // Short names for bar labels
+    const shortNames = ["Réveil", "Médita.", "Étire.", "Douche", "Deep W.", "Déj.", "Sport", "Dîner", "Lecture", "Couché"];
+    label.textContent = shortNames[i] || HABITS[i].name;
+
+    bar.appendChild(val);
+    group.appendChild(bar);
+    group.appendChild(label);
+    container.appendChild(group);
+  });
+}
+
+// Month navigation
+document.getElementById('prevMonth').addEventListener('click', () => {
+  currentMonth--;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  render();
+});
+
+document.getElementById('nextMonth').addEventListener('click', () => {
+  currentMonth++;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  render();
+});
+
+// Initial render
+render();
+</script>
+</body>
+</html>
